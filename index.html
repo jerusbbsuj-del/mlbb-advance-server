@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Advance Server Application</title>
+  <!-- CSRF token placeholder (if your backend issues CSRF tokens) -->
+  <meta name="csrf-token" content="{{CSRF_TOKEN}}">
+  <style>
+    :root{
+      --max-width:800px;
+      --radius:10px;
+      --gap:14px;
+      --accent:#1e88e5;
+      --muted:#6b7280;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    body{
+      margin:0;
+      padding:24px;
+      display:flex;
+      justify-content:center;
+      background:linear-gradient(180deg,#f8fafc,#ffffff);
+      color:#111827;
+      min-height:100vh;
+    }
+    .card{
+      width:100%;
+      max-width:var(--max-width);
+      border-radius:var(--radius);
+      background:white;
+      box-shadow:0 10px 30px rgba(2,6,23,0.06);
+      padding:28px;
+    }
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 20px;color:var(--muted)}
+    form {display:grid;gap:var(--gap)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    label{font-size:13px;color:#111827}
+    input[type="text"], input[type="email"], select, textarea {
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      font-size:14px;
+      box-sizing:border-box;
+    }
+    textarea{min-height:120px;resize:vertical}
+    .small{font-size:13px;color:var(--muted)}
+    .inline{display:flex;gap:8px;align-items:center}
+    .file-preview{display:flex;gap:8px;flex-wrap:wrap}
+    .file-preview img{width:96px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb}
+    .btn {
+      background:var(--accent);
+      color:white;
+      padding:10px 14px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn:disabled{opacity:0.6;cursor:not-allowed}
+    .row-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:640px){ .row-split{grid-template-columns:1fr} }
+    .error{color:#b91c1c;font-size:13px}
+    .note{font-size:13px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-labelledby="form-title">
+    <h1 id="form-title">Advance Server Application</h1>
+    <p class="lead">Fill this form to apply for the Advance Server. We will review your submission and contact you via email if approved.</p>
+
+    <!-- The form POSTS to /apply (server example below). enctype supports files. -->
+    <form id="applyForm" action="/apply" method="post" enctype="multipart/form-data" novalidate>
+      <!-- If your backend requires a CSRF token, render it here -->
+      <input type="hidden" name="csrf_token" value="{{CSRF_TOKEN}}">
+
+      <div class="row-split">
+        <div>
+          <label for="fullName">Full name <span class="small" aria-hidden="true">• required</span></label>
+          <input id="fullName" name="fullName" type="text" required minlength="2" placeholder="Jane Doe" autocomplete="name" />
+          <div class="error" id="err-name" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <label for="email">Email <span class="small">• required</span></label>
+          <input id="email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" />
+          <div class="error" id="err-email" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="row-split">
+        <div>
+          <label for="username">In-game username / ID</label>
+          <input id="username" name="username" type="text" placeholder="player1234" />
+        </div>
+
+        <div>
+          <label for="platform">Primary platform</label>
+          <select id="platform" name="platform" aria-label="Primary platform">
+            <option value="pc">PC</option>
+            <option value="android">Android</option>
+            <option value="ios">iOS</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="contact">Discord / Telegram / Social</label>
+        <input id="contact" name="contact" type="text" placeholder="Discord#1234 or @telegram" />
+        <div class="small note">Providing a fast contact method helps. (optional)</div>
+      </div>
+
+      <div>
+        <label for="why">Why should you be selected? <span class="small">• required</span></label>
+        <textarea id="why" name="why" required minlength="20" placeholder="Explain your interest, testing experience, device specs, etc."></textarea>
+        <div class="error" id="err-why" aria-live="polite"></div>
+      </div>
+
+      <div>
+        <label for="screens">Screenshots / logs (optional)</label>
+        <input id="screens" name="screens[]" type="file" accept="image/*,text/plain,.log,.zip" multiple />
+        <div class="file-preview" id="preview"></div>
+        <div class="small note">Allowed: images, .log, .txt, .zip. Max file size per file: 8MB (enforced client/server).</div>
+      </div>
+
+      <div class="inline">
+        <input id="agree" name="agree" type="checkbox" required />
+        <label for="agree" class="small">I agree to the Advance Server terms and that my data will be used for testing purposes.</label>
+      </div>
+
+      <div>
+        <!-- Rate-limit friendly: use a submit button with 'submitting' state -->
+        <button id="submitBtn" class="btn" type="submit">Submit Application</button>
+        <div id="formMsg" class="small" aria-live="polite"></div>
+      </div>
+    </form>
+  </main>
+
+ <script>
+  (function(){
+    const form = document.getElementById('applyForm');
+    const preview = document.getElementById('preview');
+    const submitBtn = document.getElementById('submitBtn');
+    const formMsg = document.getElementById('formMsg');
+
+    const MAX_FILE_MB = 8;
+    const ALLOWED_TYPES = [
+      'image/png','image/jpeg','image/webp','image/gif',
+      'text/plain','application/zip','application/x-zip-compressed'
+    ];
+
+    function humanFileSize(bytes){
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return (bytes / Math.pow(1024, i)).toFixed(1) * 1 + ['B','kB','MB','GB'][i];
+    }
+
+    document.getElementById('screens').addEventListener('change', function(e){
+      preview.innerHTML = '';
+      const files = Array.from(e.target.files).slice(0,5);
+      files.forEach(file => {
+        if (file.size > MAX_FILE_MB * 1024 * 1024) {
+          const warn = document.createElement('div');
+          warn.className = 'error';
+          warn.textContent = `${file.name} is too large (${humanFileSize(file.size)}). Max ${MAX_FILE_MB}MB.`;
+          preview.appendChild(warn);
+          return;
+        }
+        if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(log|txt|zip)$/i)) {
+          const warn = document.createElement('div');
+          warn.className = 'error';
+          warn.textContent = `${file.name} has an unsupported type.`;
+          preview.appendChild(warn);
+          return;
+        }
+        if (file.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.alt = file.name;
+          const reader = new FileReader();
+          reader.onload = (ev) => img.src = ev.target.result;
+          reader.readAsDataURL(file);
+          preview.appendChild(img);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'small';
+          div.textContent = `${file.name} — ${humanFileSize(file.size)}`;
+          preview.appendChild(div);
+        }
+      });
+    });
+
+    form.addEventListener('submit', function(evt){
+      evt.preventDefault(); // prevent normal submission
+
+      if (!form.checkValidity()) {
+        document.getElementById('err-name').textContent = document.getElementById('fullName').validity.valueMissing ? 'Please enter your name.' : '';
+        document.getElementById('err-email').textContent = document.getElementById('email').validity.valueMissing ? 'Please enter your email.' : (document.getElementById('email').validity.typeMismatch ? 'Please enter a valid email.' : '');
+        document.getElementById('err-why').textContent = document.getElementById('why').validity.valueMissing ? 'Tell us why you want access (20+ chars).' : '';
+        return;
+      }
+
+      const files = document.getElementById('screens').files;
+      for (let f of files) {
+        if (f.size > MAX_FILE_MB * 1024 * 1024) {
+          formMsg.textContent = `One or more files exceed the ${MAX_FILE_MB}MB limit.`;
+          return;
+        }
+      }
+
+      // Simulate successful submission
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      formMsg.textContent = 'Sending — please wait.';
+
+      // Simulate small delay before success
+      setTimeout(() => {
+        // Hide form content and show success message in center
+        document.querySelector('main.card').innerHTML = `
+          <div style="text-align:center;padding:60px 20px;">
+            <h2 style="color:#1e88e5;">Application submitted successfully!</h2>
+            <p>Redirecting, please wait...</p>
+          </div>
+        `;
+
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          window.location.href = "download.html"; // change this to your target page
+        }, 2000);
+      }, 1000);
+    });
+  })();
+</script>
+</body>
+</html>
