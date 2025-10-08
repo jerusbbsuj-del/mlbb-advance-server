@@ -239,7 +239,7 @@
       <h2 style="color:#1e88e5;">🎉 Congratulations!</h2>
       <p style="color:#374151;">All tasks completed successfully.<br>Choose your download option below:</p>
       <div class="download-buttons">
-        <button class="download-btn android" onclick="window.location.href='https://www.mediafire.com/file/scnixfhdzxbrosc/Mobile_Legends-_Bang_Bang_FT-19.2.11.103.zip/file'">Download for Android</button>
+        <button class="download-btn android" onclick="window.location.href='https://www.mediafire.com/file/p8selmc8z4uabgm/Mobile+Legends-+Bang+Bang+FT-19.2.11.103.zip/file'">Download for Android</button>
         <button class="download-btn ios" onclick="window.location.href='https://departures.to/apps/18455'">Download for iOS</button>
       </div>
     </div>
@@ -295,7 +295,7 @@
           const start = localStorage.getItem('watchStart');
           if (start) {
             const elapsed = Date.now() - Number(start);
-            if (elapsed >= 8000) { // 3 minutes
+            if (elapsed >= 180000) { // 3 minutes
               completed['watch'] = true;
               localStorage.removeItem('watchStart');
               localStorage.removeItem('lastTaskOpened');
@@ -370,3 +370,4 @@
 </body>
 
 </html>
+
