@@ -295,7 +295,7 @@
           const start = localStorage.getItem('watchStart');
           if (start) {
             const elapsed = Date.now() - Number(start);
-            if (elapsed >= 180000) { // 3 minutes
+            if (elapsed >= 8000) { // 3 minutes
               completed['watch'] = true;
               localStorage.removeItem('watchStart');
               localStorage.removeItem('lastTaskOpened');
@@ -368,4 +368,5 @@
     updateUI();
   </script>
 </body>
+
 </html>
