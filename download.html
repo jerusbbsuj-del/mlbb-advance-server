@@ -198,7 +198,7 @@
             localStorage.setItem('taskProgress', JSON.stringify(completed));
             updateUI();
             document.getElementById('linkMsg').textContent = '✅ 3-minute watch confirmed!';
-          }, 180000); // 3 minutes
+          }, 30000); // 3 minutes
         } else {
           completed[last] = true;
           localStorage.removeItem('lastTaskOpened');
